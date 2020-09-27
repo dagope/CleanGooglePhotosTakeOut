@@ -29,3 +29,5 @@ View the log file generate with the result.
 
 ## Sample results
 ![after_beafore.png](after_before.png)
+
+Note: I had 142 files duplicates because one album was duplicates with different name.

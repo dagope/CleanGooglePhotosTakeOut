@@ -36,7 +36,7 @@ namespace CleanGooglePhotosTakeOut
             //Check again
             WriteLine($"======================================= ");
             WriteLine($"============= Check process =========== ");
-            WriteInfoProcess(dirInfo);
+            WriteInfoProcess(dirInfo, true);
 
             logWriter.Dispose();
         }
@@ -58,10 +58,10 @@ namespace CleanGooglePhotosTakeOut
 
             WriteLine();
             WriteLine("Removing duplicated files:");
-            Regex regexTimelineOpt1 = new Regex(@"^(19[5-9][0-9]|20[0-4][0-9]|2050)-([0-1][1-9])-([0-3][0-9])$");   //yyyy-mm-dd 
-            Regex regexTimelineOpt2 = new Regex(@"^(19[5-9][0-9]|20[0-4][0-9]|2050)-([0-1][1-9])-([0-3][0-9])-([0-3][0-9])$");   //yyyy-mm-dd-dd 
-            Regex regexTimelineOpt3 = new Regex(@"^(19[5-9][0-9]|20[0-4][0-9]|2050)-([0-1][1-9])-([0-3][0-9]) - ([0-1][1-9])-([0-3][0-9])$");   //yyyy-mm-dd - mm-dd
-            Regex regexTimelineOpt4 = new Regex(@"^(19[5-9][0-9]|20[0-4][0-9]|2050)-([0-1][1-9])-([0-3][0-9]) (#[1-9])$");   //yyyy-mm-dd #2 
+            Regex regexTimelineOpt1 = new Regex(@"^(19[5-9][0-9]|20[0-4][0-9]|2050)-([0-1][0-9])-([0-3][0-9])$");   //yyyy-mm-dd 
+            Regex regexTimelineOpt2 = new Regex(@"^(19[5-9][0-9]|20[0-4][0-9]|2050)-([0-1][0-9])-([0-3][0-9])-([0-3][0-9])$");   //yyyy-mm-dd-dd 
+            Regex regexTimelineOpt3 = new Regex(@"^(19[5-9][0-9]|20[0-4][0-9]|2050)-([0-1][0-9])-([0-3][0-9]) - ([0-1][1-9])-([0-3][0-9])$");   //yyyy-mm-dd - mm-dd
+            Regex regexTimelineOpt4 = new Regex(@"^(19[5-9][0-9]|20[0-4][0-9]|2050)-([0-1][0-9])-([0-3][0-9]) (#[1-9])$");   //yyyy-mm-dd #2 
             var countRemovedDuplicate = 0;
 
             foreach (var file in duplicates) {
@@ -74,9 +74,10 @@ namespace CleanGooglePhotosTakeOut
                     // folder timeline
                     var theDuplicates= files.Where(f => f.Name == file.Name && f.FullName != file.FullName);
                     var existInAlbum = theDuplicates.Any( d => !regexTimelineOpt1.IsMatch(d.Directory.Name) 
-                                                            && !regexTimelineOpt2.IsMatch(nameParentDir)
-                                                            && !regexTimelineOpt3.IsMatch(nameParentDir)
-                                                            && !regexTimelineOpt4.IsMatch(nameParentDir));
+                                                            && !regexTimelineOpt2.IsMatch(d.Directory.Name)
+                                                            && !regexTimelineOpt3.IsMatch(d.Directory.Name)
+                                                            && !regexTimelineOpt4.IsMatch(d.Directory.Name));                                                            
+                    
                     if(existInAlbum){
                         DeleteFile(file, "Exist in album - ");
                         countRemovedDuplicate++;
@@ -101,7 +102,7 @@ namespace CleanGooglePhotosTakeOut
             }
         }
 
-        private static void WriteInfoProcess(DirectoryInfo dirInfo){
+        private static void WriteInfoProcess(DirectoryInfo dirInfo, bool logDuplicates = false){
             var files = dirInfo.GetFiles("*", SearchOption.AllDirectories);
             var duplicates = GetDuplicateFiles(files);
             WriteLine($"Path: {dirInfo.FullName}");
@@ -119,7 +120,14 @@ namespace CleanGooglePhotosTakeOut
             WriteLine("Extensions:");
             foreach (var extension in files.Select(z=>z.Extension).Distinct()) {
                 WriteLine(extension);    
+            }            
+
+            if(logDuplicates){
+                WriteToFileLog("List duplicate files: ");
+                foreach (var file in duplicates)
+                    WriteToFileLog(file.FullName);
             }
+                
         }
 
         private static void WriteLine (string text = "", ConsoleColor color = ConsoleColor.White){
@@ -160,7 +168,9 @@ namespace CleanGooglePhotosTakeOut
             {
                 if(regexDotNumber.IsMatch(file.Extension)){
                     WriteLine($"File extension fixed: {file.Name} to {file.Name}.jpg");
-                    file.MoveTo(file.FullName + ".jpg");
+                    var newFileName = file.FullName + ".jpg";
+                    if(File.Exists(newFileName)) File.Delete(newFileName);
+                    file.MoveTo(newFileName);
                 }    
             }
         }
